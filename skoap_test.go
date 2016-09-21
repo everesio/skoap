@@ -59,6 +59,7 @@ func Test(t *testing.T) {
 		authBaseUrl    string
 		teamBaseUrl    string
 		serviceBaseUrl string
+		serviceRealm   string
 		args           []interface{}
 		hasAuth        bool
 		auth           string
@@ -186,6 +187,7 @@ func Test(t *testing.T) {
 		authBaseUrl:    testAuthPath + "?access_token=",
 		teamBaseUrl:    testTeamPath + "?member=",
 		serviceBaseUrl: testServicePath,
+		serviceRealm:   testRealm,
 		args:           []interface{}{testRealm, "invalid-team-0", testTeam},
 		hasAuth:        true,
 		auth:           testServiceToken,
@@ -265,7 +267,7 @@ func Test(t *testing.T) {
 		if ti.typ == checkScope {
 			s = NewAuth(authServer.URL + ti.authBaseUrl)
 		} else {
-			s = NewAuthTeam(authServer.URL+ti.authBaseUrl, teamServer.URL+ti.teamBaseUrl, serviceServer.URL+ti.serviceBaseUrl)
+			s = NewAuthTeam(authServer.URL+ti.authBaseUrl, teamServer.URL+ti.teamBaseUrl, serviceServer.URL+ti.serviceBaseUrl, ti.serviceRealm)
 		}
 		fr := make(filters.Registry)
 		fr.Register(s)

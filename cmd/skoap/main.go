@@ -49,6 +49,9 @@ const (
 	serviceUrlBaseFlag    = "service-url"
 	defaultServiceUrlBase = "http://[::1]:9083/?uid="
 
+	serviceRealmFlag    = "service-realm"
+	defaultServiceRealm = "/services"
+
 	tlsCertFlag = "tls-cert"
 	tlsKeyFlag  = "tls-key"
 
@@ -143,6 +146,7 @@ var (
 	authUrlBase         string
 	teamUrlBase         string
 	serviceUrlBase      string
+	serviceRealm        string
 	certPathTLS         string
 	keyPathTLS          string
 	verbose             bool
@@ -181,6 +185,7 @@ func init() {
 	fs.StringVar(&authUrlBase, authUrlBaseFlag, "", authUrlBaseUsage)
 	fs.StringVar(&teamUrlBase, teamUrlBaseFlag, "", teamUrlBaseUsage)
 	fs.StringVar(&serviceUrlBase, serviceUrlBaseFlag, "", teamUrlBaseUsage)
+	fs.StringVar(&serviceRealm, serviceRealmFlag, defaultServiceRealm, "")
 	fs.StringVar(&certPathTLS, tlsCertFlag, "", certPathTLSUsage)
 	fs.StringVar(&keyPathTLS, tlsKeyFlag, "", keyPathTLSUsage)
 	fs.BoolVar(&verbose, verboseFlag, false, verboseUsage)
@@ -258,7 +263,7 @@ func main() {
 		EtcdPrefix: etcdPrefix,
 		CustomFilters: []filters.Spec{
 			skoap.NewAuth(authUrlBase),
-			skoap.NewAuthTeam(authUrlBase, teamUrlBase, serviceUrlBase),
+			skoap.NewAuthTeam(authUrlBase, teamUrlBase, serviceUrlBase, "/services"),
 			skoap.NewBasicAuth(),
 			skoap.NewAuditLog(os.Stderr)},
 		AccessLogDisabled:   true,

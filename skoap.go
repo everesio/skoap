@@ -162,6 +162,7 @@ type (
 		authClient    *authClient
 		teamClient    *teamClient
 		serviceClient *serviceClient
+		serviceRealm  string
 	}
 
 	filter struct {
@@ -169,6 +170,7 @@ type (
 		authClient    *authClient
 		teamClient    *teamClient
 		serviceClient *serviceClient
+		serviceRealm  string
 		realms        []string
 		args          []string
 	}
@@ -307,11 +309,12 @@ func (sc *serviceClient) getOwner(uid, token string) (string, error) {
 	return s.Owner, nil
 }
 
-func newSpec(typ roleCheckType, authUrlBase, teamUrlBase, serviceUrlBase string) filters.Spec {
+func newSpec(typ roleCheckType, authUrlBase, teamUrlBase, serviceUrlBase, serviceRealm string) filters.Spec {
 	s := &spec{typ: typ, authClient: &authClient{authUrlBase}}
 	if typ == checkTeam {
 		s.teamClient = &teamClient{teamUrlBase}
 		s.serviceClient = &serviceClient{serviceUrlBase}
+		s.serviceRealm = serviceRealm
 	}
 
 	return s
@@ -328,7 +331,7 @@ func newSpec(typ roleCheckType, authUrlBase, teamUrlBase, serviceUrlBase string)
 // The token is set as the Authorization Bearer header.
 //
 func NewAuth(authUrlBase string) filters.Spec {
-	return newSpec(checkScope, authUrlBase, "", "")
+	return newSpec(checkScope, authUrlBase, "", "", "")
 }
 
 // Creates a new auth filter specification to validate authorization
@@ -345,8 +348,8 @@ func NewAuth(authUrlBase string) filters.Spec {
 // user is a member of ('id' field of the returned json document's
 // items). The user id of the user is appended at the end of the url.
 //
-func NewAuthTeam(authUrlBase, teamUrlBase, serviceUrlBase string) filters.Spec {
-	return newSpec(checkTeam, authUrlBase, teamUrlBase, serviceUrlBase)
+func NewAuthTeam(authUrlBase, teamUrlBase, serviceUrlBase, serviceRealm string) filters.Spec {
+	return newSpec(checkTeam, authUrlBase, teamUrlBase, serviceUrlBase, serviceRealm)
 }
 
 func (s *spec) Name() string {
@@ -368,6 +371,7 @@ func (s *spec) CreateFilter(args []interface{}) (filters.Filter, error) {
 		authClient:    s.authClient,
 		teamClient:    s.teamClient,
 		serviceClient: s.serviceClient,
+		serviceRealm:  s.serviceRealm,
 	}
 	if len(sargs) > 0 {
 		f.realms = make([]string, 0)
@@ -405,13 +409,14 @@ func (f *filter) validateTeam(token string, a *authDoc) (bool, error) {
 		return true, nil
 	}
 
-	teams, err := f.teamClient.getTeams(a.Uid, token)
-	if !intersect(f.args, teams) {
+	if a.Realm == f.serviceRealm {
 		// try services API
 		owner, err := f.serviceClient.getOwner(a.Uid, token)
 		return intersect(f.args, []string{owner}), err
 	}
-	return true, err
+
+	teams, err := f.teamClient.getTeams(a.Uid, token)
+	return intersect(f.args, teams), err
 }
 
 func (f *filter) Request(ctx filters.FilterContext) {
