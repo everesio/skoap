@@ -13,6 +13,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/zalando-incubator/skoap"
@@ -38,6 +39,7 @@ const (
 	auditBodyFlag      = "audit-log-limit"
 	routesFileFlag     = "routes-file"
 	insecureFlag       = "insecure"
+	cacheTTLFlag       = "cache-ttl"
 
 	defaultAddress     = ":9090"
 	authUrlBaseFlag    = "auth-url"
@@ -54,6 +56,8 @@ const (
 
 	tlsCertFlag = "tls-cert"
 	tlsKeyFlag  = "tls-key"
+
+	defaultCacheTTL = time.Minute
 
 	verboseFlag = "v"
 
@@ -151,6 +155,7 @@ var (
 	keyPathTLS          string
 	verbose             bool
 	experimentalUpgrade bool
+	cacheTTL            time.Duration
 )
 
 func (src *singleRouteClient) LoadAll() ([]*eskip.Route, error) {
@@ -188,6 +193,7 @@ func init() {
 	fs.StringVar(&serviceRealm, serviceRealmFlag, defaultServiceRealm, "")
 	fs.StringVar(&certPathTLS, tlsCertFlag, "", certPathTLSUsage)
 	fs.StringVar(&keyPathTLS, tlsKeyFlag, "", keyPathTLSUsage)
+	fs.DurationVar(&cacheTTL, cacheTTLFlag, defaultCacheTTL, "")
 	fs.BoolVar(&verbose, verboseFlag, false, verboseUsage)
 	fs.BoolVar(&experimentalUpgrade, experimentalUpgradeFlag, false, experimentalUpgradeUsage)
 
@@ -263,7 +269,7 @@ func main() {
 		EtcdPrefix: etcdPrefix,
 		CustomFilters: []filters.Spec{
 			skoap.NewAuth(authUrlBase),
-			skoap.NewAuthTeam(authUrlBase, teamUrlBase, serviceUrlBase, "/services"),
+			skoap.NewAuthTeam(authUrlBase, teamUrlBase, serviceUrlBase, "/services", cacheTTL),
 			skoap.NewBasicAuth(),
 			skoap.NewAuditLog(os.Stderr)},
 		AccessLogDisabled:   true,

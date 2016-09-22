@@ -146,7 +146,10 @@ type (
 		urlBase string
 		cache   *ttlcache.Cache
 	}
-	serviceClient struct{ urlBase string }
+	serviceClient struct {
+		urlBase string
+		cache   *ttlcache.Cache
+	}
 
 	authDoc struct {
 		Uid    string   `json:"uid"`
@@ -310,21 +313,27 @@ func (tc *teamClient) getTeams(uid, token string) ([]string, error) {
 	return ts, nil
 }
 
-func (sc *serviceClient) getOwner(uid, token string) (string, error) {
+func (sc *serviceClient) getOwners(uid, token string) ([]string, error) {
+	if owner, ok := sc.cache.Get(uid); ok {
+		return owner, nil
+	}
+
 	var s serviceDoc
 	err := jsonGet(sc.urlBase+uid, token, &s)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return s.Owner, nil
+	sc.cache.Set(uid, []string{s.Owner})
+
+	return []string{s.Owner}, nil
 }
 
-func newSpec(typ roleCheckType, authUrlBase, teamUrlBase, serviceUrlBase, serviceRealm string) filters.Spec {
+func newSpec(typ roleCheckType, authUrlBase, teamUrlBase, serviceUrlBase, serviceRealm string, ttl time.Duration) filters.Spec {
 	s := &spec{typ: typ, authClient: &authClient{authUrlBase}}
 	if typ == checkTeam {
-		s.teamClient = &teamClient{teamUrlBase, ttlcache.NewCache(1 * time.Second)}
-		s.serviceClient = &serviceClient{serviceUrlBase}
+		s.teamClient = &teamClient{teamUrlBase, ttlcache.NewCache(ttl)}
+		s.serviceClient = &serviceClient{serviceUrlBase, ttlcache.NewCache(ttl)}
 		s.serviceRealm = serviceRealm
 	}
 
@@ -342,7 +351,7 @@ func newSpec(typ roleCheckType, authUrlBase, teamUrlBase, serviceUrlBase, servic
 // The token is set as the Authorization Bearer header.
 //
 func NewAuth(authUrlBase string) filters.Spec {
-	return newSpec(checkScope, authUrlBase, "", "", "")
+	return newSpec(checkScope, authUrlBase, "", "", "", 0)
 }
 
 // Creates a new auth filter specification to validate authorization
@@ -359,8 +368,8 @@ func NewAuth(authUrlBase string) filters.Spec {
 // user is a member of ('id' field of the returned json document's
 // items). The user id of the user is appended at the end of the url.
 //
-func NewAuthTeam(authUrlBase, teamUrlBase, serviceUrlBase, serviceRealm string) filters.Spec {
-	return newSpec(checkTeam, authUrlBase, teamUrlBase, serviceUrlBase, serviceRealm)
+func NewAuthTeam(authUrlBase, teamUrlBase, serviceUrlBase, serviceRealm string, ttl time.Duration) filters.Spec {
+	return newSpec(checkTeam, authUrlBase, teamUrlBase, serviceUrlBase, serviceRealm, ttl)
 }
 
 func (s *spec) Name() string {
@@ -422,8 +431,8 @@ func (f *filter) validateTeam(token string, a *authDoc) (bool, error) {
 
 	if a.Realm == f.serviceRealm {
 		// try services API
-		owner, err := f.serviceClient.getOwner(a.Uid, token)
-		return intersect(f.args, []string{owner}), err
+		owner, err := f.serviceClient.getOwners(a.Uid, token)
+		return intersect(f.args, owner), err
 	}
 
 	teams, err := f.teamClient.getTeams(a.Uid, token)

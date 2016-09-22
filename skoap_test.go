@@ -268,7 +268,7 @@ func Test(t *testing.T) {
 		if ti.typ == checkScope {
 			s = NewAuth(authServer.URL + ti.authBaseUrl)
 		} else {
-			s = NewAuthTeam(authServer.URL+ti.authBaseUrl, teamServer.URL+ti.teamBaseUrl, serviceServer.URL+ti.serviceBaseUrl, ti.serviceRealm)
+			s = NewAuthTeam(authServer.URL+ti.authBaseUrl, teamServer.URL+ti.teamBaseUrl, serviceServer.URL+ti.serviceBaseUrl, ti.serviceRealm, time.Second)
 		}
 		fr := make(filters.Registry)
 		fr.Register(s)
@@ -367,7 +367,7 @@ func TestCaching(t *testing.T) {
 
 		var s filters.Spec
 
-		s = NewAuthTeam(authServer.URL+ti.authBaseUrl, teamServer.URL+ti.teamBaseUrl, serviceServer.URL+ti.serviceBaseUrl, ti.serviceRealm)
+		s = NewAuthTeam(authServer.URL+ti.authBaseUrl, teamServer.URL+ti.teamBaseUrl, serviceServer.URL+ti.serviceBaseUrl, ti.serviceRealm, time.Second)
 		fr := make(filters.Registry)
 		fr.Register(s)
 		r := &eskip.Route{Filters: []*eskip.Filter{{Name: s.Name(), Args: ti.args}}, Backend: backend.URL}
@@ -479,7 +479,7 @@ func TestUsers(t *testing.T) {
 		}))
 
 		var s filters.Spec
-		s = NewAuthTeam(authServer.URL+ti.authBaseUrl, teamServer.URL+ti.teamBaseUrl, serviceServer.URL+ti.serviceBaseUrl, ti.serviceRealm)
+		s = NewAuthTeam(authServer.URL+ti.authBaseUrl, teamServer.URL+ti.teamBaseUrl, serviceServer.URL+ti.serviceBaseUrl, ti.serviceRealm, time.Second)
 		fr := make(filters.Registry)
 		fr.Register(s)
 		r := &eskip.Route{Filters: []*eskip.Filter{{Name: s.Name(), Args: ti.args}}, Backend: backend.URL}
