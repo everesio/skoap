@@ -1,11 +1,16 @@
 # Skoap
 
-## Incubator Help Welcome
+## Migration Warning
 
-The library and command in this repository currently depends on our auth and team service implementation. To make this repository a kinder open source place, we would need to make its dependencies more flexible. At minimum:
+Dear Users,
 
-- define swagger descriptions for both service dependencies
-- in the library, create interfaces for both the auth and the team service
+New Zalando projects are waiting for the incubator space, and we considered this baby healthy enough. We will
+migrate this project from its own repo to Skipper
+[https://github.com/zalando/skipper](https://github.com/zalando/skipper), as an integral part. We're planning to
+remove it from here by 2017.08.15.
+
+If you face any issues or have any questions while updating your build and deployment configuration, please,
+don't hesitate to contact us: @szuecs, @raffo, @gargravarr, @aryszka.
 
 ## Skoap
 
